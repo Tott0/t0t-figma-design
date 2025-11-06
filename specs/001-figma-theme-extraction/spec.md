@@ -111,6 +111,29 @@ A developer has successfully transformed design tokens into Tailwind 4-compatibl
 
 ---
 
+### User Story 5 - Package Command for Distribution to Any Project (Priority: P1)
+
+A developer has completed the command implementation and wants to make it available for use in any project. The command should be packaged as a Claude Code command file (`.claude/commands/t0t.extract-figma-theme.md`) along with any required utility scripts in a `.t0t-figma/` folder. For initial distribution, users will manually copy these files into their projects.
+
+**Why this priority**: Without proper packaging and distribution, the command cannot be used outside this development project. The command must be self-contained and installable via simple file copying. This enables users to adopt the tool immediately while an automated npm-based installer can be developed in the future.
+
+**Independent Test**: Can be fully tested by copying the generated command file and utilities folder into a fresh project, running the command, and verifying it works without any dependencies on the original development project.
+
+**Acceptance Scenarios**:
+
+1. **Given** the command implementation is complete, **When** the packaging phase runs, **Then** a command file is generated at `.claude/commands/t0t.extract-figma-theme.md`
+2. **Given** the command requires utility scripts (color conversion, name sanitization, etc.), **When** packaging runs, **Then** all utilities are organized in `.t0t-figma/scripts/` folder
+3. **Given** the command file references utility scripts, **When** the command executes, **Then** it correctly resolves paths to `.t0t-figma/scripts/` from the project root
+4. **Given** a user copies `.claude/commands/t0t.extract-figma-theme.md` and `.t0t-figma/` to their project, **When** they run the command via Claude Code, **Then** the command executes successfully without requiring any other files
+5. **Given** the command package includes dependencies (culori library), **When** a user runs the command, **Then** the system provides clear instructions for installing required npm packages
+6. **Given** the `.t0t-figma/` folder structure, **When** users explore it, **Then** it follows the pattern: `.t0t-figma/scripts/`, `.t0t-figma/templates/` (for future use), `.t0t-figma/lib/` (for compiled utilities)
+7. **Given** the command file format, **When** it executes, **Then** it follows Claude Code command conventions (markdown format, clear description, proper invocation syntax)
+8. **Given** the command needs to reference documentation, **When** packaging runs, **Then** inline documentation is included in the command file explaining usage, inputs, and outputs
+9. **Given** future updates to the command, **When** users want to upgrade, **Then** they can simply replace the `.claude/commands/` file and `.t0t-figma/` folder
+10. **Given** the command execution, **When** errors occur, **Then** error messages clearly indicate if the issue is with missing dependencies, MCP configuration, or input validation
+
+---
+
 ### Edge Cases
 
 - What happens when a Figma URL points to a file without any design token definitions (e.g., just mockups or wireframes)?
@@ -197,6 +220,23 @@ A developer has successfully transformed design tokens into Tailwind 4-compatibl
 - **FR-049**: System MUST log total token count and breakdown by category upon completion
 - **FR-050**: System MUST ensure deterministic output: identical inputs produce identical output files
 
+#### Command Packaging Requirements (User Story 5)
+
+- **FR-051**: System MUST generate a command file at `.claude/commands/t0t.extract-figma-theme.md` following Claude Code command format
+- **FR-052**: System MUST organize all utility scripts in `.t0t-figma/scripts/` folder
+- **FR-053**: System MUST organize compiled libraries in `.t0t-figma/lib/` folder
+- **FR-054**: System MUST create `.t0t-figma/templates/` folder for future template storage
+- **FR-055**: Command file MUST include inline documentation explaining usage, inputs (URL vs JSON), and expected outputs
+- **FR-056**: Command file MUST reference utility scripts using project-root-relative paths (e.g., `.t0t-figma/scripts/transform.js`)
+- **FR-057**: System MUST bundle all transformation utilities (color conversion, name sanitization, unit conversion) as standalone scripts
+- **FR-058**: System MUST include a dependency check in the command that verifies required npm packages (culori) are installed
+- **FR-059**: Command MUST provide clear error messages if dependencies are missing, with installation instructions
+- **FR-060**: System MUST ensure packaged command works when copied to any project directory structure
+- **FR-061**: System MUST document the `.t0t-figma/` folder structure in a README file within that folder
+- **FR-062**: Command file MUST follow markdown format with proper metadata (title, description, tags)
+- **FR-063**: System MUST ensure all utility scripts are self-contained with no external dependencies beyond documented npm packages
+- **FR-064**: System MUST include version information in both command file and utility scripts for upgrade tracking
+
 ### Key Entities
 
 - **Input Source**: The origin of design system data. Attributes: type (URL or JSON file), value (URL string or file path), validation status, priority (JSON prioritized over URL).
@@ -212,6 +252,8 @@ A developer has successfully transformed design tokens into Tailwind 4-compatibl
 - **Theme File**: The generated `figma-theme-variables.css` output file. Attributes: file path, total token count, tokens by category, generation timestamp, validation status (valid CSS).
 
 - **Extraction Session**: A single execution of the `t0t.extract-figma-theme` command. Attributes: timestamp, input type (URL or JSON), input value, MCP validation result (if applicable), extraction success/failure, transformation success/failure, output file path, total tokens processed, warnings logged, errors encountered.
+
+- **Command Package**: The distributable package for the command. Attributes: command file path (`.claude/commands/t0t.extract-figma-theme.md`), utilities folder path (`.t0t-figma/`), version number, required dependencies list, installation instructions, README content, folder structure (scripts/, lib/, templates/).
 
 ## Success Criteria *(mandatory)*
 
@@ -233,6 +275,10 @@ A developer has successfully transformed design tokens into Tailwind 4-compatibl
 - **SC-014**: Running command twice with identical input produces byte-identical output files (deterministic behavior)
 - **SC-015**: 90% of token name sanitization cases preserve semantic meaning (e.g., "Primary / 500" becomes `--color-primary-500`)
 - **SC-016**: Error messages for input validation failures are clear enough that users can resolve 90% of issues without external help
+- **SC-017**: Command package (`.claude/commands/` file + `.t0t-figma/` folder) can be copied to any project and works immediately after copying
+- **SC-018**: Users can install the command by copying 2 items (1 file, 1 folder) with zero configuration needed
+- **SC-019**: Command file documentation is clear enough that 90% of users can successfully run the command on first try without external help
+- **SC-020**: Utility scripts in `.t0t-figma/` folder have zero dependencies beyond documented npm packages
 
 ## Assumptions
 
@@ -252,6 +298,10 @@ A developer has successfully transformed design tokens into Tailwind 4-compatibl
 - The tool does not need real-time synchronization with Figma
 - Output file can be overwritten safely (no need for versioning or backups within the tool)
 - Users have write permissions in the directory where output file is generated
+- Users can manually copy files (command file and utilities folder) into their projects
+- Claude Code supports custom commands via `.claude/commands/` directory
+- Claude Code commands can reference and execute external scripts from project folders
+- Users will install required npm dependencies (culori) manually when instructed
 
 ## Out of Scope for Phase 1
 
@@ -276,3 +326,8 @@ The following features are explicitly **not** included in Phase 1:
 - **Custom output location**: User-specified output directory/filename
 - **Multiple output formats**: Generating SCSS, JSON, or other formats alongside CSS
 - **Dark mode / theme variants**: Handling Figma variable scoping for different modes
+- **Automated npm package distribution**: Publishing to npm registry (manual copy/paste is Phase 1 approach)
+- **Interactive installation wizard**: Automated setup script (npx-based installer for future)
+- **Automatic dependency installation**: Auto-installing npm packages (users install manually in Phase 1)
+- **Command versioning and updates**: Automatic update checking and installation (manual file replacement in Phase 1)
+- **Multi-project workspace support**: Installing command once for multiple projects (each project gets own copy in Phase 1)

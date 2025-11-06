@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2025-11-06
-**Updated**: 2025-11-06 (Revalidated after workflow restructure)
+**Updated**: 2025-11-06 (Added User Story 5: Command Packaging & Distribution)
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -12,7 +12,7 @@
 - [x] Written for non-technical stakeholders
 - [x] All mandatory sections completed
 
-**Notes**: Specification describes the workflow from a user perspective (command execution, input/output) without prescribing implementation technologies. The command name `t0t.extract-figma-theme` is specified as a user-facing interface, not an implementation detail.
+**Notes**: Specification describes the workflow from a user perspective (command execution, input/output, distribution) without prescribing implementation technologies. Command packaging details focus on user-facing distribution method (copy files) rather than implementation.
 
 ## Requirement Completeness
 
@@ -26,13 +26,13 @@
 - [x] Dependencies and assumptions identified
 
 **Notes**:
-- All 50 functional requirements are testable (specify observable behaviors)
-- Success criteria include specific metrics (e.g., "100% of the time", "under 30 seconds", "zero CSS syntax errors")
-- Success criteria are technology-agnostic (focused on outcomes like "command correctly handles input" rather than implementation)
-- 4 user stories with 38 total acceptance scenarios
+- All 64 functional requirements are testable (specify observable behaviors)
+- Success criteria include specific metrics (e.g., "100% of the time", "under 30 seconds", "zero configuration needed")
+- Success criteria are technology-agnostic (focused on outcomes like "command can be copied to any project")
+- 5 user stories with 48 total acceptance scenarios
 - 17 edge cases identified
-- "Out of Scope" section clearly defines boundaries
-- Assumptions section documents 17 assumptions about environment and user expectations
+- "Out of Scope" section clearly defines boundaries (including future npm-based distribution)
+- Assumptions section documents 21 assumptions including manual file copying and Claude Code command support
 
 ## Feature Readiness
 
@@ -43,20 +43,21 @@
 
 **Notes**:
 - Each functional requirement maps to acceptance scenarios in the user stories
-- User stories follow the actual execution workflow: Input → Extraction → Transformation → Output
+- User stories follow complete workflow: Input → Extraction → Transformation → Output → **Packaging**
+- Distribution phase ensures command can be used beyond development project
 - The specification is ready for planning and implementation
 
 ## Validation Status: ✅ PASSED
 
-All checklist items have been verified. The specification is complete, unambiguous, and ready to proceed to `/speckit.plan` for implementation planning.
+All checklist items have been verified. The specification is complete, unambiguous, and ready to proceed to `/speckit.plan` for implementation planning (plan update needed to include User Story 5).
 
 ---
 
 ## Detailed Review Notes
 
-### User Stories Analysis (Updated Workflow)
+### User Stories Analysis (Updated with Packaging Phase)
 
-**Phase 1 Scope** (4 user stories following execution flow):
+**Phase 1 Scope** (5 user stories following execution flow):
 
 1. **Accept Input from Figma URL or JSON File (P1)** - 7 acceptance scenarios
    - Handles both input methods
@@ -83,11 +84,18 @@ All checklist items have been verified. The specification is complete, unambiguo
    - Organizes by category
    - Validates output is importable into Tailwind 4 projects
 
-**Total**: 38 acceptance scenarios covering complete workflow from input to output.
+5. **Package Command for Distribution (P1)** - 10 acceptance scenarios
+   - Generates `.claude/commands/t0t.extract-figma-theme.md` command file
+   - Organizes utilities in `.t0t-figma/` folder structure
+   - Ensures portability (copy 2 items to any project)
+   - Includes inline documentation and dependency management
+   - Supports future upgrades via file replacement
+
+**Total**: 48 acceptance scenarios covering complete workflow from input to distribution.
 
 ### Requirements Analysis
 
-**Functional Requirements** (50 total, organized by user story):
+**Functional Requirements** (64 total, organized by user story):
 
 - **Input Handling (US1)**: FR-001 to FR-011 (11 requirements)
   - URL and JSON file acceptance
@@ -115,11 +123,20 @@ All checklist items have been verified. The specification is complete, unambiguo
   - Validation and logging
   - Deterministic output
 
+- **Command Packaging (US5)**: FR-051 to FR-064 (14 requirements)
+  - Command file generation (`.claude/commands/`)
+  - Utility organization (`.t0t-figma/scripts/`, `.t0t-figma/lib/`, `.t0t-figma/templates/`)
+  - Path resolution (project-root-relative)
+  - Dependency management
+  - Documentation inclusion
+  - Portability assurance
+  - Version tracking
+
 All requirements are testable through acceptance scenarios and observable behaviors.
 
 ### Success Criteria Analysis
 
-**Measurable Outcomes** (16 total):
+**Measurable Outcomes** (20 total):
 
 - **Input Handling**: SC-001 to SC-004 (URL/JSON handling, MCP validation, input prioritization)
 - **Extraction**: SC-005 to SC-006 (token capture rate, equivalence between URL/JSON paths)
@@ -128,6 +145,7 @@ All requirements are testable through acceptance scenarios and observable behavi
 - **Performance**: SC-012 to SC-013 (execution time for different dataset sizes)
 - **Reliability**: SC-014 (deterministic output)
 - **Usability**: SC-015 to SC-016 (name sanitization, error message clarity)
+- **Distribution**: SC-017 to SC-020 (portability, installation simplicity, documentation clarity, zero external dependencies)
 
 All criteria include quantifiable metrics and are technology-agnostic.
 
@@ -141,13 +159,15 @@ All criteria include quantifiable metrics and are technology-agnostic.
 
 ### Key Changes from Previous Version
 
-1. **Workflow restructure**: User stories now follow execution order (Input → Extract → Transform → Output)
-2. **Consolidated extraction**: All token types extracted in single phase instead of separate phases per type
-3. **Command interface**: Specified as `t0t.extract-figma-theme` Claude Code command
-4. **Output file**: Specified as `figma-theme-variables.css`
-5. **MCP validation**: Explicit requirement to validate Figma MCP before proceeding with URL path
-6. **Input prioritization**: JSON file takes priority when both URL and file provided
-7. **Documentation references**: Added references to baseline formats without reading files in spec (deferred to planning)
+1. **Added User Story 5**: Command packaging and distribution phase
+2. **Folder structure defined**: `.t0t-figma/scripts/`, `.t0t-figma/lib/`, `.t0t-figma/templates/`
+3. **Distribution method**: Manual copy/paste (2 items: command file + utilities folder)
+4. **Command file format**: `.claude/commands/t0t.extract-figma-theme.md` with inline documentation
+5. **Portability requirements**: Command must work when copied to any project structure
+6. **Future scope clarified**: npm-based installer explicitly out of scope for Phase 1
+7. **14 new functional requirements** (FR-051 to FR-064) for packaging
+8. **4 new success criteria** (SC-017 to SC-020) for distribution
+9. **Command Package entity** added to Key Entities
 
 ### Archived Content
 
@@ -157,14 +177,37 @@ Archived content remains in `documentation/archived-for-the-future.md`:
 - Command dependency management
 - Future phases (Component Generation, UI Generation, Page Generation)
 
+### Out of Scope (Distribution-Related)
+
+Added explicit out-of-scope items for Phase 1:
+- Automated npm package distribution (publishing to npm registry)
+- Interactive installation wizard (npx-based installer)
+- Automatic dependency installation
+- Command versioning and auto-updates
+- Multi-project workspace support
+
 ---
 
 ## Recommendation
 
-**Status**: ✅ **APPROVED FOR PLANNING**
+**Status**: ✅ **APPROVED FOR PLANNING UPDATE**
 
-The specification has been successfully restructured to match the execution workflow while maintaining completeness and clarity. You may proceed with:
-- `/speckit.plan` to generate the implementation plan
-- `/speckit.tasks` to generate actionable tasks
+The specification has been successfully updated to include command packaging and distribution (User Story 5). The plan.md file should be updated to include:
 
-No specification updates needed at this time.
+1. **Phase 1 Design additions**:
+   - Command file structure (`.claude/commands/t0t.extract-figma-theme.md`)
+   - Utilities folder structure (`.t0t-figma/`)
+   - README for `.t0t-figma/` folder
+   - Installation instructions
+
+2. **Testing additions**:
+   - Portability tests (copy to fresh project)
+   - Command file format validation
+   - Dependency checking tests
+   - Documentation clarity tests
+
+You may proceed with:
+- Update `/speckit.plan` to incorporate User Story 5
+- `/speckit.tasks` to generate actionable tasks (after plan update)
+
+The specification is complete and ready for implementation.

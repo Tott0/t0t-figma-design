@@ -32,3 +32,8 @@ after that is the process to translate a json of figma variables into tailwind4 
 the end result of running this command should always be a single css file tentatively called `figma-theme-variables.css`
 
 for the spec part dont read the files just yet, leave the explicit definiton for the plan part
+
+
+####
+
+/speckit.specify forgot about something lets add a final phase to figure out how to add the command as a usable feature for any user in any project, I imagine a command md file to be added into .claude should be generated but wonder how to handle any required generated utility (to translate or something) into the command as well, can commands have folders? or like speckit have a .t0t-figma folder that includes all future scripts, templates, etc. for now lets assume that any new project will just copy and paste required files into it to use them and a npx command to install should be for the future future.
