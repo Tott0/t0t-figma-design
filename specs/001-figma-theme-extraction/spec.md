@@ -1,171 +1,278 @@
-# Feature Specification: Figma Design System to Tailwind Theme Extraction
+# Feature Specification: Figma Design Tokens to Tailwind 4 Theme Extraction
 
 **Feature Branch**: `001-figma-theme-extraction`
 **Created**: 2025-11-05
+**Updated**: 2025-11-06 (Restructured workflow to match execution flow)
 **Status**: Draft
-**Input**: User description: "Build a tool used to extract information from a figma url, usually a design system and then reformat the obtained information into useful style specifications."
+**Input**: User description: "Build a Claude Code executable command that extracts design tokens from Figma and converts them into a Tailwind 4 theme CSS file"
+
+**Command Name**: `t0t.extract-figma-theme`
+**Output File**: `figma-theme-variables.css`
+
+## Clarifications
+
+### Session 2025-11-06
+
+- Q: Should colors be converted to OKLCH format, or would an alternative format be more appropriate given compatibility and conversion concerns? → A: OKLCH format - perceptually uniform, modern standard, better color interpolation. Growing browser support aligns with Tailwind 4's forward-looking approach.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Extract Figma Design Tokens to Tailwind Theme (Priority: P1)
+### User Story 1 - Accept Input from Figma URL or JSON File (Priority: P1)
 
-A designer or developer has created a design system in Figma with defined colors, typography, spacing, and other design tokens. They want to automatically extract these design tokens and convert them into a Tailwind 4 theme file that can be imported into any project using Tailwind CSS v4.
+A developer wants to extract design tokens from a Figma design system. They have two options: provide a Figma URL (which requires the Figma MCP tool to be working) or provide a downloaded JSON file from Figma. The command should accept either input method, with JSON file taking priority if both are provided. For the Figma URL path, the command must validate that the Figma MCP tool is active and functioning before proceeding.
 
-**Why this priority**: This is the foundational capability that enables all other features. Without the ability to extract and format design tokens, no other workflows are possible. This delivers immediate value by automating the manual and error-prone process of translating design specifications into code.
+**Why this priority**: Input handling is the first step in the workflow. Without a reliable way to get design system data, nothing else can happen. Validating MCP functionality upfront prevents wasted time and confusing errors later in the process.
 
-**Independent Test**: Can be fully tested by providing a Figma URL with a design system, running the extraction command, and verifying that a valid Tailwind 4 theme CSS file is generated with correct `@theme` declarations for colors, spacing, fonts, and other design tokens.
+**Independent Test**: Can be fully tested by running the command with: (1) only a Figma URL with working MCP, (2) only a Figma URL with non-working MCP, (3) only a JSON file, (4) both URL and JSON file. Verify correct input is used and appropriate validation/errors occur.
 
 **Acceptance Scenarios**:
 
-1. **Given** a Figma URL containing a design system with color styles, **When** the user runs the extraction command with the URL, **Then** the system generates a CSS file with properly formatted `--color-*` theme variables in OKLCH format
-2. **Given** a Figma design system with typography styles (font families, sizes, weights), **When** extraction is performed, **Then** the output includes `--font-*`, `--text-*`, `--font-weight-*`, and `--leading-*` theme variables
-3. **Given** a Figma design system with spacing values, **When** extraction is performed, **Then** the output includes `--spacing-*` theme variables
-4. **Given** a Figma design system with border radius values, **When** extraction is performed, **Then** the output includes `--radius-*` theme variables
-5. **Given** a Figma design system with shadow effects, **When** extraction is performed, **Then** the output includes `--shadow-*` and `--inset-shadow-*` theme variables
-6. **Given** the user provides downloaded Figma JSON instead of a URL, **When** extraction is performed, **Then** the system processes the JSON and generates the same quality theme file
+1. **Given** the user provides only a Figma URL, **When** the command runs, **Then** the system validates that Figma MCP is active and functioning before proceeding
+2. **Given** the user provides a Figma URL but Figma MCP is not working, **When** the command runs, **Then** the system displays an error message asking the user to fix MCP configuration and stops execution
+3. **Given** the user provides only a JSON file path, **When** the command runs, **Then** the system validates the JSON file exists and is readable, then proceeds with extraction
+4. **Given** the user provides both a Figma URL and a JSON file path, **When** the command runs, **Then** the system prioritizes the JSON file and proceeds with that input
+5. **Given** the user provides a JSON file that doesn't exist or is unreadable, **When** the command runs, **Then** the system displays a clear error message with the file path and stops execution
+6. **Given** the user provides neither a Figma URL nor a JSON file, **When** the command runs, **Then** the system displays usage instructions showing both input methods
+7. **Given** the user provides a Figma URL and MCP validation passes, **When** the command proceeds, **Then** the system can successfully fetch design system data from Figma
 
 ---
 
-### User Story 2 - Iterative Theme Refinement (Priority: P2)
+### User Story 2 - Extract All Design Tokens from Figma into Unified JSON (Priority: P1)
 
-A user has extracted a theme from Figma but needs to refine it based on updated designs or discovered issues. They want to re-run the extraction process to update the theme file without starting from scratch.
+A developer has provided either a Figma URL or JSON file. The command should extract all design token categories (colors, typography, spacing, border radius, shadows, and any other design variables) from the Figma design system in a single extraction phase, producing a unified JSON structure that represents all design tokens. This JSON structure should match the expected format of Figma's variable export format.
 
-**Why this priority**: Design systems evolve continuously. Users need to keep their Tailwind themes in sync with Figma updates. This enables an iterative workflow where the tool becomes part of the design-to-code pipeline rather than a one-time conversion.
+**Why this priority**: Extracting all tokens at once is more efficient than multiple separate extraction phases. This unified approach ensures consistency and allows the transformation phase to work with a complete dataset. The extraction phase produces a normalized intermediate format that the transformation phase can consume.
 
-**Independent Test**: Can be fully tested by extracting a theme, modifying the Figma design system (e.g., changing color values), re-running the extraction, and verifying that the theme file is updated with new values while maintaining proper formatting and structure.
+**Independent Test**: Can be fully tested by providing a Figma design system (via URL or JSON), running extraction, and verifying that the output JSON contains all token categories with correct values and proper structure matching the expected Figma variable format.
 
 **Acceptance Scenarios**:
 
-1. **Given** an existing theme file from a previous extraction, **When** the user re-runs extraction with the same Figma URL, **Then** the system updates the theme file with new values
-2. **Given** a Figma design system where a color has been renamed, **When** re-extraction is performed, **Then** the old color variable is removed and the new one is added
-3. **Given** a Figma design system with new design tokens added, **When** re-extraction is performed, **Then** the new tokens are appended to the existing theme file
-4. **Given** conflicting theme variables between old and new extractions, **When** re-extraction is performed, **Then** the system preserves the new values and logs what changed
+1. **Given** a Figma design system with color variables, **When** extraction runs, **Then** the output JSON includes all color definitions with their values and metadata
+2. **Given** a Figma design system with typography variables (font families, sizes, weights, line heights, letter spacing), **When** extraction runs, **Then** the output JSON includes all typography definitions
+3. **Given** a Figma design system with spacing variables, **When** extraction runs, **Then** the output JSON includes all spacing definitions
+4. **Given** a Figma design system with border radius variables, **When** extraction runs, **Then** the output JSON includes all radius definitions
+5. **Given** a Figma design system with shadow effects, **When** extraction runs, **Then** the output JSON includes all shadow definitions with their properties (offset, blur, spread, color)
+6. **Given** a Figma design system with multiple variable categories, **When** extraction runs, **Then** the output JSON organizes tokens by category in a consistent structure
+7. **Given** a Figma design system with nested/hierarchical naming (e.g., "color/primary/500"), **When** extraction runs, **Then** the output JSON preserves the hierarchical structure
+8. **Given** input from a Figma URL (via MCP), **When** extraction completes, **Then** the resulting JSON structure matches the format of a directly downloaded Figma JSON file
+9. **Given** a Figma design system with no design tokens defined, **When** extraction runs, **Then** the system produces an empty or minimal JSON structure and logs a warning
+
+**Reference**: The expected JSON structure should match the format found in `./documentation/Soulix Design System-variables-full` (baseline format established during planning phase).
 
 ---
 
-### User Story 3 - Theme Validation and Quality Checks (Priority: P2)
+### User Story 3 - Transform Figma JSON to Tailwind 4 CSS Format (Priority: P1)
 
-A user has extracted a theme and wants to ensure it follows Tailwind 4 conventions, has no naming conflicts, and will work correctly when imported into a project.
+A developer has successfully extracted design tokens into a unified JSON structure. The command should transform this JSON into Tailwind 4-compatible CSS custom properties, following Tailwind 4's `@theme` directive conventions. This includes converting color formats to OKLCH, converting units (px to rem where appropriate), and generating proper CSS variable names that follow Tailwind's naming patterns.
 
-**Why this priority**: Automated extraction can produce edge cases or formatting issues. Validation catches problems before developers try to use the theme, reducing debugging time and ensuring consistency with Tailwind 4 standards.
+**Why this priority**: The transformation phase is where the extracted data becomes useful. Without proper transformation to Tailwind 4 format, the extracted tokens cannot be used in a Tailwind project. This phase handles all format conversions, naming conventions, and CSS structure requirements.
 
-**Independent Test**: Can be fully tested by providing an extracted theme file (or generating one with intentional errors), running validation, and verifying that the system reports all issues with specific line numbers and suggestions for fixes.
+**Independent Test**: Can be fully tested by providing a JSON structure with design tokens, running transformation, and verifying that the output CSS uses correct Tailwind 4 syntax, proper variable naming, correct color format (OKLCH), and appropriate unit conversions.
 
 **Acceptance Scenarios**:
 
-1. **Given** a generated theme file, **When** validation is run, **Then** the system confirms all theme variables follow Tailwind 4 naming conventions
-2. **Given** a theme file with duplicate variable names, **When** validation is run, **Then** the system reports the duplicates and their locations
-3. **Given** a theme file with invalid OKLCH color values, **When** validation is run, **Then** the system reports the invalid colors and suggests corrections
-4. **Given** a theme file missing required CSS structure (e.g., `@theme {}` wrapper), **When** validation is run, **Then** the system reports the structural issues
-5. **Given** a valid theme file, **When** validation is run, **Then** the system confirms successful validation with a summary of extracted tokens
+1. **Given** a JSON with color tokens in RGB/HSL/HEX format, **When** transformation runs, **Then** the output CSS contains `--color-*` variables with values in OKLCH format
+2. **Given** a JSON with color tokens that have opacity/alpha values, **When** transformation runs, **Then** the output CSS preserves opacity in OKLCH format (e.g., `oklch(0.5 0.2 180 / 0.8)`)
+3. **Given** a JSON with typography tokens including font sizes in pixels, **When** transformation runs, **Then** the output CSS contains `--text-*` variables with values converted to rem units
+4. **Given** a JSON with typography tokens including font families, **When** transformation runs, **Then** the output CSS contains `--font-*` variables with font family names
+5. **Given** a JSON with typography tokens including weights, line heights, and letter spacing, **When** transformation runs, **Then** the output CSS contains `--font-weight-*`, `--leading-*`, and `--tracking-*` variables
+6. **Given** a JSON with spacing tokens in pixels, **When** transformation runs, **Then** the output CSS contains `--spacing-*` variables with values converted to rem units
+7. **Given** a JSON with border radius tokens, **When** transformation runs, **Then** the output CSS contains `--radius-*` variables with appropriate units (px or %)
+8. **Given** a JSON with shadow tokens, **When** transformation runs, **Then** the output CSS contains `--shadow-*` variables with proper CSS box-shadow syntax and OKLCH color format
+9. **Given** a JSON with shadow tokens that have multiple layers, **When** transformation runs, **Then** the output CSS combines layers into comma-separated box-shadow values
+10. **Given** a JSON with tokens that have nested/hierarchical names (e.g., "color/primary/500"), **When** transformation runs, **Then** the output CSS converts these to valid CSS variable names (e.g., `--color-primary-500`)
+11. **Given** a JSON with tokens that have special characters or spaces in names, **When** transformation runs, **Then** the output CSS sanitizes names to valid CSS custom property names (replace spaces with hyphens, remove invalid characters)
+12. **Given** a JSON with duplicate token names, **When** transformation runs, **Then** the system handles conflicts by appending a unique suffix and logs a warning
+
+**Reference**: The target CSS format and Tailwind 4 conventions should follow patterns found in `./documentation/tailwindcss.txt` (established during planning phase) (This patterns are not strict if knowledge of tailwind is found, the only goal is functioning tailwind4 css).
 
 ---
 
-### User Story 4 - Command Dependency Management (Priority: P3)
+### User Story 4 - Generate Tailwind 4 Theme CSS File (Priority: P1)
 
-A user wants to run advanced commands (like future UI generation commands) but hasn't extracted a theme yet. The system should prevent running dependent commands and guide the user to run prerequisite steps first.
+A developer has successfully transformed design tokens into Tailwind 4-compatible CSS. The command should generate a final CSS file named `figma-theme-variables.css` that contains all theme variables wrapped in a `@theme {}` directive, organized by category (colors, fonts, spacing, etc.), and formatted for direct import into a Tailwind 4 project.
 
-**Why this priority**: As the tool grows to support multiple phases (theme extraction, component generation, UI generation), users need clear guidance on execution order. This prevents cryptic errors and provides a better user experience.
+**Why this priority**: The final output file is the deliverable that users will import into their projects. It must be properly formatted, valid CSS, and require no manual editing to work with Tailwind 4. This is the tangible result of the entire extraction and transformation process.
 
-**Independent Test**: Can be fully tested by attempting to run a dependent command (e.g., a future UI generation command) without having extracted a theme first, and verifying that the system blocks execution with a helpful error message pointing to the prerequisite command.
+**Independent Test**: Can be fully tested by running the complete command, verifying the output file exists at the expected path, contains valid CSS with `@theme {}` structure, and can be imported into a Tailwind 4 project without errors.
 
 **Acceptance Scenarios**:
 
-1. **Given** no theme file exists, **When** a user tries to run a command that depends on theme extraction, **Then** the system blocks execution and displays an error message indicating the prerequisite command
-2. **Given** a theme file exists, **When** a user runs a dependent command, **Then** the system proceeds with execution
-3. **Given** a corrupted or invalid theme file, **When** a user runs a dependent command, **Then** the system suggests re-running the extraction command
-4. **Given** multiple commands with dependencies, **When** a user runs any command, **Then** the system validates the entire dependency chain and reports any missing prerequisites
+1. **Given** successfully transformed CSS variables, **When** file generation runs, **Then** the system creates a file named `figma-theme-variables.css` in the project directory
+2. **Given** successfully transformed CSS variables, **When** file generation runs, **Then** the output file contains a valid `@theme {}` directive wrapper
+3. **Given** successfully transformed CSS variables, **When** file generation runs, **Then** the output file organizes variables by category (colors section, fonts section, spacing section, etc.)
+4. **Given** successfully transformed CSS variables, **When** file generation runs, **Then** the output file contains valid CSS that can be parsed by standard CSS parsers
+5. **Given** a generated `figma-theme-variables.css` file, **When** the file is imported into a Tailwind 4 project via `@import` directive, **Then** all theme variables are available to Tailwind utility classes
+6. **Given** a generated `figma-theme-variables.css` file, **When** the file is imported into a Tailwind 4 project, **Then** no CSS syntax errors or warnings appear in the browser console
+7. **Given** a generated `figma-theme-variables.css` file, **When** the file is imported into a Tailwind 4 project, **Then** Tailwind utility classes can reference the custom theme variables (e.g., `bg-primary-500` uses `--color-primary-500`)
+8. **Given** the command runs multiple times with the same input, **When** file generation completes, **Then** the output file is overwritten with the new content
+9. **Given** the output file location is not writable, **When** file generation attempts to write, **Then** the system displays a clear error message about permission issues
+10. **Given** successfully generated file, **When** generation completes, **Then** the system logs the output file path, total token count, and tokens by category
 
 ---
 
 ### Edge Cases
 
-- What happens when a Figma URL points to a file without design tokens (e.g., just mockups)?
-- What happens when the Figma file is private and the MCP tool cannot access it?
-- What happens when color values in Figma use RGB/HSL instead of the expected formats?
-- How does the system handle extremely large design systems (500+ tokens)?
-- What happens when token names in Figma contain special characters or spaces?
-- What happens when typography uses fonts not available as web fonts?
-- What happens when a Figma file uses deprecated style formats?
-- How does the system handle shadow effects with multiple layers?
-- What happens when spacing values use inconsistent units (px, rem, em mixed)?
-- What happens when the user provides a Figma node ID that doesn't exist?
+- What happens when a Figma URL points to a file without any design token definitions (e.g., just mockups or wireframes)?
+- What happens when the Figma file is private and the MCP tool cannot access it even with proper configuration?
+- What happens when Figma MCP is configured but returns incomplete or malformed data?
+- What happens when a JSON file is provided but doesn't match the expected Figma variable format?
+- What happens when the JSON file is extremely large (10+ MB with thousands of tokens)?
+- What happens when token names in Figma contain special characters, emojis, or non-Latin scripts?
+- How does the system handle color values in unusual color spaces or formats not easily converted to OKLCH?
+- What happens when typography uses fonts not available as web fonts or system fonts?
+- What happens when spacing values use inconsistent units across different tokens (some in px, some in rem, some in em)?
+- What happens when shadow effects have extremely high blur values or negative offsets?
+- What happens when Figma styles are organized in deeply nested folders (e.g., "brand/primary/light/100")?
+- How does the system handle color names that conflict with Tailwind's default color names (e.g., a custom "blue")?
+- What happens when the Figma file contains both local styles and linked library styles?
+- What happens when variable scoping exists in Figma (different values for light/dark modes)?
+- What happens when the output directory doesn't exist or is not writable?
+- How does the system handle running the command multiple times (overwrite vs append vs version)?
+- What happens when the user cancels/interrupts the command mid-execution?
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST extract design tokens from a Figma URL using the Claude MCP Figma tool
-- **FR-002**: System MUST accept either a Figma URL or a downloaded Figma JSON file as input
-- **FR-003**: System MUST extract color styles and convert them to `--color-*` theme variables in OKLCH format
-- **FR-004**: System MUST extract typography styles and convert them to `--font-*`, `--text-*`, `--font-weight-*`, `--tracking-*`, and `--leading-*` theme variables
-- **FR-005**: System MUST extract spacing values and convert them to `--spacing-*` theme variables
-- **FR-006**: System MUST extract border radius values and convert them to `--radius-*` theme variables
-- **FR-007**: System MUST extract shadow effects and convert them to `--shadow-*` and `--inset-shadow-*` theme variables
-- **FR-008**: System MUST generate output as a valid CSS file with `@theme {}` directive following Tailwind 4 syntax
-- **FR-009**: System MUST output theme files that can be imported into any Tailwind 4 project without modification
-- **FR-010**: System MUST support re-running extraction to update existing theme files with new design token values
-- **FR-011**: System MUST validate generated theme files for Tailwind 4 compliance
-- **FR-012**: System MUST detect and report naming conflicts in theme variables
-- **FR-013**: System MUST detect and report invalid color format values
-- **FR-014**: System MUST validate CSS structure of generated theme files
-- **FR-015**: System MUST implement dependency checking to prevent running dependent commands without prerequisites
-- **FR-016**: System MUST provide clear error messages when prerequisites are missing
-- **FR-017**: System MUST handle Figma files that cannot be accessed due to permissions
-- **FR-018**: System MUST handle Figma files without design token definitions gracefully
-- **FR-019**: System MUST sanitize token names from Figma to ensure valid CSS variable names (remove special characters, spaces)
-- **FR-020**: System MUST preserve the deterministic output principle: identical Figma inputs always produce identical theme outputs
-- **FR-021**: System MUST log all extraction operations with timestamp, source URL/file, and tokens extracted
-- **FR-022**: System MUST support extraction of animation timing functions and convert them to `--ease-*` theme variables
-- **FR-023**: System MUST support extraction of breakpoint values if defined in Figma and convert them to `--breakpoint-*` theme variables
+#### Input Handling Requirements (User Story 1)
+
+- **FR-001**: Command MUST accept a Figma URL as an input parameter
+- **FR-002**: Command MUST accept a JSON file path as an input parameter
+- **FR-003**: Command MUST prioritize JSON file input if both URL and file path are provided
+- **FR-004**: Command MUST validate that at least one input method (URL or file path) is provided
+- **FR-005**: Command MUST validate that the JSON file exists and is readable before proceeding
+- **FR-006**: Command MUST validate Figma URL format before attempting to use MCP
+- **FR-007**: Command MUST verify that Figma MCP tool is active and functioning when URL input is used
+- **FR-008**: Command MUST perform a test MCP operation to confirm functionality before proceeding with extraction
+- **FR-009**: Command MUST halt execution and display clear error message if MCP validation fails
+- **FR-010**: Command MUST provide instructions for fixing MCP configuration when validation fails
+- **FR-011**: Command MUST display usage instructions when no valid input is provided
+
+#### Extraction Requirements (User Story 2)
+
+- **FR-012**: System MUST extract all design token categories in a single extraction phase
+- **FR-013**: System MUST extract color variables from Figma design system
+- **FR-014**: System MUST extract typography variables (font families, sizes, weights, line heights, letter spacing) from Figma design system
+- **FR-015**: System MUST extract spacing variables from Figma design system
+- **FR-016**: System MUST extract border radius variables from Figma design system
+- **FR-017**: System MUST extract shadow effect variables from Figma design system
+- **FR-018**: System MUST produce a unified JSON structure containing all extracted tokens
+- **FR-019**: System MUST organize extracted tokens by category in the JSON structure
+- **FR-020**: System MUST preserve hierarchical naming structures from Figma (e.g., "color/primary/500")
+- **FR-021**: System MUST produce equivalent JSON structure whether input is from URL (MCP) or JSON file
+- **FR-022**: System MUST handle Figma design systems with no tokens gracefully (produce minimal JSON, log warning)
+- **FR-023**: System MUST validate that extracted JSON matches expected Figma variable format structure
+
+#### Transformation Requirements (User Story 3)
+
+- **FR-024**: System MUST convert all color values from any format (RGB, HSL, HEX) to OKLCH format (rationale: OKLCH provides perceptually uniform colors, better interpolation, and aligns with modern CSS standards supported by Tailwind 4)
+- **FR-025**: System MUST preserve opacity/alpha values when converting colors to OKLCH
+- **FR-026**: System MUST convert font sizes from pixels to rem units
+- **FR-027**: System MUST convert spacing values from pixels to rem units
+- **FR-028**: System MUST preserve border radius units (px or %) without conversion
+- **FR-029**: System MUST convert shadow effects to CSS box-shadow syntax
+- **FR-030**: System MUST convert shadow colors to OKLCH format
+- **FR-031**: System MUST combine multiple shadow layers into comma-separated box-shadow values
+- **FR-032**: System MUST generate CSS variable names following Tailwind 4 patterns: `--color-*`, `--font-*`, `--text-*`, `--font-weight-*`, `--leading-*`, `--tracking-*`, `--spacing-*`, `--radius-*`, `--shadow-*`
+- **FR-033**: System MUST convert hierarchical token names to valid CSS variable names (e.g., "color/primary/500" → `--color-primary-500`)
+- **FR-034**: System MUST sanitize token names to valid CSS custom property names (alphanumeric, hyphens, underscores only)
+- **FR-035**: System MUST handle duplicate token names by appending unique suffix and logging warning
+- **FR-036**: System MUST maintain color precision during conversion (no visible color changes)
+- **FR-037**: System MUST log warnings when token names contain special characters that require sanitization
+- **FR-038**: System MUST log warnings when fonts may not be web-safe
+
+#### Output Generation Requirements (User Story 4)
+
+- **FR-039**: System MUST generate output file named `figma-theme-variables.css`
+- **FR-040**: System MUST wrap all CSS variables in a `@theme {}` directive
+- **FR-041**: System MUST organize variables by category within the `@theme {}` block (colors, fonts, spacing, etc.)
+- **FR-042**: System MUST generate valid CSS parseable by standard CSS parsers
+- **FR-043**: System MUST generate CSS compatible with Tailwind 4 without modification
+- **FR-044**: System MUST write output file to the project directory (or user-specified location)
+- **FR-045**: System MUST overwrite existing output file if it exists
+- **FR-046**: System MUST handle file write permission errors with clear error messages
+- **FR-047**: System MUST validate output directory is writable before attempting to write
+- **FR-048**: System MUST log output file path upon successful generation
+- **FR-049**: System MUST log total token count and breakdown by category upon completion
+- **FR-050**: System MUST ensure deterministic output: identical inputs produce identical output files
 
 ### Key Entities
 
-- **Design Token**: A named design value from Figma (color, spacing, typography, etc.) that maps to a Tailwind theme variable. Attributes: name, value, type (color/spacing/font/etc.), Figma source reference.
-- **Theme File**: The generated CSS output file containing all extracted design tokens formatted as Tailwind 4 theme variables. Attributes: file path, creation timestamp, source Figma URL/file, validation status, token count.
-- **Extraction Session**: A single run of the extraction command. Attributes: timestamp, input source (URL or JSON file), output file path, success/failure status, tokens extracted count, errors/warnings.
-- **Validation Result**: The outcome of validating a theme file. Attributes: validation timestamp, theme file path, pass/fail status, list of issues found, list of suggestions.
+- **Input Source**: The origin of design system data. Attributes: type (URL or JSON file), value (URL string or file path), validation status, priority (JSON prioritized over URL).
+
+- **Figma MCP Validator**: Component that checks MCP functionality. Attributes: validation status (pass/fail), error message, test operation result.
+
+- **Design Token JSON**: Intermediate JSON structure containing all extracted tokens. Attributes: token categories (colors, typography, spacing, radius, shadows), hierarchical structure, total token count, source type (from URL or file).
+
+- **Design Token**: A named design value from Figma. Attributes: category (color/typography/spacing/radius/shadow), name (hierarchical), value (original format), metadata.
+
+- **CSS Variable**: Transformed design token in Tailwind 4 CSS format. Attributes: CSS variable name (e.g., `--color-primary-500`), value (transformed format like OKLCH or rem), category, source token reference.
+
+- **Theme File**: The generated `figma-theme-variables.css` output file. Attributes: file path, total token count, tokens by category, generation timestamp, validation status (valid CSS).
+
+- **Extraction Session**: A single execution of the `t0t.extract-figma-theme` command. Attributes: timestamp, input type (URL or JSON), input value, MCP validation result (if applicable), extraction success/failure, transformation success/failure, output file path, total tokens processed, warnings logged, errors encountered.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can extract a complete theme from a Figma design system in under 30 seconds
-- **SC-002**: Generated theme files pass Tailwind 4 validation 100% of the time when source Figma follows standard practices
-- **SC-003**: Extracted themes produce no console errors or warnings when imported into a Tailwind 4 project
-- **SC-004**: 95% of design tokens from Figma are successfully extracted and correctly formatted
-- **SC-005**: Re-running extraction on the same Figma source produces byte-identical output (deterministic)
-- **SC-006**: Users can iterate on theme extraction and see updates reflected in under 30 seconds per iteration
-- **SC-007**: System successfully handles Figma files with up to 500 design tokens without performance degradation
-- **SC-008**: Error messages for missing prerequisites or validation failures are clear enough that users can resolve 90% of issues without external help
-- **SC-009**: Naming conflicts and validation issues are detected and reported with specific locations 100% of the time
+- **SC-001**: Command correctly handles input from Figma URL 100% of the time when MCP is working
+- **SC-002**: Command correctly handles input from JSON file 100% of the time when file is valid
+- **SC-003**: Command detects non-working MCP 100% of the time and halts execution with clear error
+- **SC-004**: Command prioritizes JSON file input when both URL and file are provided 100% of the time
+- **SC-005**: Extraction phase successfully captures 95% of all design tokens from Figma design system
+- **SC-006**: Extraction from URL (via MCP) produces structurally equivalent JSON to direct JSON file input
+- **SC-007**: Color conversion from any format to OKLCH maintains visual accuracy (no perceptible color shift)
+- **SC-008**: Font size and spacing conversions from px to rem use correct conversion ratio (e.g., 16px = 1rem)
+- **SC-009**: Generated `figma-theme-variables.css` contains zero CSS syntax errors when validated by CSS parser
+- **SC-010**: Generated `figma-theme-variables.css` produces zero console errors when imported into Tailwind 4 project
+- **SC-011**: Tailwind utility classes can reference custom theme variables 100% of the time (e.g., `bg-primary-500` uses `--color-primary-500`)
+- **SC-012**: Command completes extraction and transformation for design system with 50-100 tokens in under 30 seconds
+- **SC-013**: Command completes extraction and transformation for design system with up to 500 tokens in under 60 seconds
+- **SC-014**: Running command twice with identical input produces byte-identical output files (deterministic behavior)
+- **SC-015**: 90% of token name sanitization cases preserve semantic meaning (e.g., "Primary / 500" becomes `--color-primary-500`)
+- **SC-016**: Error messages for input validation failures are clear enough that users can resolve 90% of issues without external help
 
 ## Assumptions
 
-- Figma design systems follow common naming conventions for styles (e.g., "primary-500", "spacing-md", "font-body")
-- Users have access to the Figma files they want to extract from (either public links or appropriate permissions)
-- The Claude MCP Figma tool is properly configured and available in the user's environment
-- Users understand basic CSS and Tailwind CSS concepts
-- Figma color values can be reliably converted to OKLCH format (or a conversion library is available)
-- Users will primarily use the tool as a CLI command integrated with Claude Code
-- The tool will be run in environments with Node.js or Python available for any necessary dependencies
-- Users want theme variables to follow Tailwind's default naming patterns unless explicitly customized
-- Generated theme files will be checked into version control alongside other project files
+- Users have Claude Code installed and configured
+- Users understand how to run Claude Code commands
+- Users have either access to a Figma design system URL or can export JSON from Figma
+- The Figma MCP tool is available as an installable/configurable component for Claude Code
+- Figma design systems follow common naming conventions for variables
+- The Figma variable export format (JSON) has a consistent structure across different Figma files
+- A color conversion library or formula exists to convert RGB/HSL/HEX to OKLCH with acceptable precision
+- Users have Tailwind CSS v4 installed in their projects
+- The `@theme {}` directive syntax is stable in Tailwind 4 (based on current documentation)
+- Generated theme files will be checked into version control alongside project files
+- Users will manually handle web font setup (tool only extracts font family names)
+- Most Figma design systems use consistent units within token categories
+- Users will re-run the command manually when Figma design system is updated
+- The tool does not need real-time synchronization with Figma
+- Output file can be overwritten safely (no need for versioning or backups within the tool)
+- Users have write permissions in the directory where output file is generated
 
-## Future Phases (Archived)
+## Out of Scope for Phase 1
 
-The following phases are explicitly **not** part of this specification and are documented here for future reference only:
+The following features are explicitly **not** included in Phase 1:
 
-### Phase 2: Component Generation (POSTPONED)
-- Generating reusable UI components following shadcn methodology
-- Reading Figma component designs and translating them to component variants
-- Creating component APIs based on theme variables
-
-### Phase 3: Prompt-Based UI Generation (POSTPONED)
-- Generating UI from natural language prompts
-- Ensuring generated UI uses only theme variables (no inline styles)
-
-### Phase 4: Full Page Generation (POSTPONED)
-- Extracting entire page designs from Figma
-- Breaking pages into semantic blocks
-- Composing pages from generated components
+- **Iterative theme refinement**: Re-running extraction to merge with existing theme files (see `documentation/archived-for-the-future.md`)
+- **Theme validation**: Validating generated theme files and reporting issues (archived)
+- **Command dependency management**: Prerequisite checking for dependent commands (archived)
+- **Component generation**: Generating UI components from Figma (Phase 2)
+- **Prompt-based UI generation**: Generating UI from natural language (Phase 3)
+- **Full page generation**: Extracting page designs from Figma (Phase 4)
+- **Animation tokens**: Extracting animation timing and durations
+- **Breakpoint tokens**: Extracting responsive breakpoint values
+- **Custom naming schemes**: User-customizable variable naming patterns
+- **Web font integration**: Automatically setting up web fonts
+- **Real-time synchronization**: Auto-updating theme when Figma changes
+- **Interactive CLI prompts**: Guided extraction with prompts
+- **Theme merging**: Combining multiple Figma sources
+- **Partial extraction**: Extracting specific token categories only
+- **Token documentation**: Generating documentation for tokens
+- **Visual theme preview**: HTML preview of extracted theme
+- **Custom output location**: User-specified output directory/filename
+- **Multiple output formats**: Generating SCSS, JSON, or other formats alongside CSS
+- **Dark mode / theme variants**: Handling Figma variable scoping for different modes
