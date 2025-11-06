@@ -22,14 +22,14 @@ This feature follows **Test-Driven Development (TDD)** per constitution requirem
 
 ### Tasks
 
-- [ ] T001 Initialize package.json with project metadata and scripts in /Users/nestor.torres/Workspace/t0t-figma-design/package.json
-- [ ] T002 [P] Install dependencies: culori, zod, stream-json, typescript, tsx, vitest, @types/node via npm install
-- [ ] T003 Create tsconfig.json with strict mode configuration in /Users/nestor.torres/Workspace/t0t-figma-design/tsconfig.json
-- [ ] T004 Create vitest.config.ts with 80% coverage threshold in /Users/nestor.torres/Workspace/t0t-figma-design/vitest.config.ts
-- [ ] T005 [P] Create .gitignore file excluding node_modules, dist, coverage in /Users/nestor.torres/Workspace/t0t-figma-design/.gitignore
-- [ ] T006 Create project directory structure: .t0t-figma/scripts/, .t0t-figma/lib/, .t0t-figma/templates/, tests/unit/, tests/integration/, tests/contract/, tests/snapshots/
-- [ ] T007 [P] Create shared types file in .t0t-figma/scripts/types.ts based on contracts/types.ts
-- [ ] T008 Verify Node.js version is 20.x or later by running node --version
+- [X] T001 Initialize package.json with project metadata and scripts in /Users/nestor.torres/Workspace/t0t-figma-design/package.json
+- [X] T002 [P] Install dependencies: culori, zod, stream-json, typescript, tsx, vitest, @types/node via npm install
+- [X] T003 Create tsconfig.json with strict mode configuration in /Users/nestor.torres/Workspace/t0t-figma-design/tsconfig.json
+- [X] T004 Create vitest.config.ts with 80% coverage threshold in /Users/nestor.torres/Workspace/t0t-figma-design/vitest.config.ts
+- [X] T005 [P] Create .gitignore file excluding node_modules, dist, coverage in /Users/nestor.torres/Workspace/t0t-figma-design/.gitignore
+- [X] T006 Create project directory structure: .t0t-figma/scripts/, .t0t-figma/lib/, .t0t-figma/templates/, tests/unit/, tests/integration/, tests/contract/, tests/snapshots/
+- [X] T007 [P] Create shared types file in .t0t-figma/scripts/types.ts based on contracts/types.ts
+- [X] T008 Verify Node.js version is 20.x or later by running node --version
 
 ---
 

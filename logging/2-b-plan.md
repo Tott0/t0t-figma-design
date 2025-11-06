@@ -6,3 +6,9 @@
   ####
 
   /speckit.tasks
+
+
+
+  ###
+
+   /speckit.implement only tasks of phase 1
