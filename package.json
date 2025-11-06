@@ -1,0 +1,35 @@
+{
+  "name": "t0t-figma-design",
+  "version": "1.0.0",
+  "description": "Extract design tokens from Figma and convert to Tailwind 4 theme CSS",
+  "type": "module",
+  "main": ".t0t-figma/scripts/index.ts",
+  "scripts": {
+    "test": "vitest run --no-watch",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "figma",
+    "design-tokens",
+    "tailwind",
+    "tailwindcss",
+    "theme",
+    "oklch",
+    "css-variables"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^24.10.0",
+    "@vitest/coverage-v8": "^4.0.7",
+    "culori": "^4.0.2",
+    "stream-json": "^1.9.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.7",
+    "zod": "^4.1.12"
+  }
+}
